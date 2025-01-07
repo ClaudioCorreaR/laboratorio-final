@@ -1,0 +1,12 @@
+name: pipelene
+on:
+  push:
+    branches:
+    - feat-pipeline
+jobs:
+  SCRIPT:
+    runs-on: node:19-alpine3.15
+    steps:
+    - name: first-commit
+      run: |
+        echo 'first-commit'
