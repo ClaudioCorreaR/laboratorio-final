@@ -4,9 +4,18 @@ on:
     branches:
     - feat-pipeline
 jobs:
-  SCRIPT:
-    runs-on: node:19-alpine3.15
+  SAST:
+    runs-on: ubuntu-latest #node:19-alpine3.15
     steps:
-    - name: first-commit
+    - name: Set up JDK 17
+      uses: action/setup-java@v2
+      with:
+        java-version: '17'
+        distribution: 'adopt'
+
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: build
       run: |
-        echo 'first-commit'
+        npm install
