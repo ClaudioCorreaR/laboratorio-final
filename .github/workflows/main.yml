@@ -5,7 +5,7 @@ on:
     - feat-pipeline
 jobs:
   SAST:
-    runs-on: node:19-alpine3.15
+    runs-on: ubuntu-latest #node:19-alpine3.15
     steps:
     - name: Set up JDK 17
       uses: actions/setup-java@v2
@@ -15,6 +15,11 @@ jobs:
 
     - name: Checkout code
       uses: actions/checkout@v2
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '19'
 
     - name: build
       run: |
