@@ -1,8 +1,10 @@
 name: pipeline
+
 on:
   push:
     branches:
       - main
+
 jobs:
   SAST:
     runs-on: ubuntu-latest
@@ -20,22 +22,6 @@ jobs:
 
     - name: Set Environment Variables
       run: echo "BRANCH_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
-
-    # - name: Validate project in SonarCloud
-    #   id: validateProjectOnSonar
-    #   run: |
-    #     set +e
-    #     curl -f -X POST -u '${{ secrets.SONAR_TOKEN }}:' 'https://sonarcloud.io/api/projects/create' -d 'name=${{ github.event.repository.name }}' -d 'project=${{ github.event.repository.name }}' -d 'organization=claudiocorrear' -d 'visibility=public'
-    #     if [ $? -ne 0 ]; then
-    #       echo "Proyecto ya existe en Sonarcloud"
-    #       echo "project_created=false" >> $GITHUB_ENV
-    #     else
-    #       echo "Proyecto ${{ github.event.repository.name }} creado exitosamente en Sonarcloud"
-    #       echo "Se establece rama main como rama por defecto"
-    #       curl -X POST -u '${{ secrets.SONAR_TOKEN }}:' 'https://sonarcloud.io/api/project_branches/rename' -d 'name=main' -d 'project=${{ github.event.repository.name }}'
-    #       echo "project_created=true" >> $GITHUB_ENV
-    #     fi
-    #     set -e
 
     - name: Perform Initial Analysis (if Project Created)
       if: env.project_created == 'true'
@@ -92,3 +78,45 @@ jobs:
         else
           echo "El proyecto cumple con el Quality Gate y no tiene vulnerabilidades críticas. Continuando sin problemas."
         fi
+
+  SCA:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Download OWASP Dependency Check
+      run: |
+        curl -LO https://github.com/jeremylong/DependencyCheck/releases/download/v8.4.0/dependency-check-8.4.0-release.zip
+        unzip dependency-check-8.4.0-release.zip -d dependency-check
+
+    - name: Run OWASP Dependency Check
+      run: |
+        dependency-check/bin/dependency-check.sh \
+        --project "Node.js Dependency Check" \
+        --scan . \
+        --format "ALL" \
+        --out ./dependency-check-report
+
+    - name: Check for Critical Vulnerabilities
+      run: |
+        if grep -q "CRITICAL" ./dependency-check-report/dependency-check-report.json; then
+          echo "Se encontraron vulnerabilidades críticas. Fallando el pipeline."
+          exit 1
+        else
+          echo "No se encontraron vulnerabilidades críticas. Continuando..."
+        fi
+
+    - name: Upload Dependency Check Report
+      uses: actions/upload-artifact@v3
+      with:
+        name: dependency-check-report
+        path: ./dependency-check-report
