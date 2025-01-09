@@ -25,6 +25,7 @@
     "react-firebase-hooks": "^5.0.3",
     "react-icons": "^4.3.1",
     "recoil": "^0.6.1",
+    "reddit-clone-yt": "file:",
     "safe-json-stringify": "^1.2.0"
   },
   "devDependencies": {
