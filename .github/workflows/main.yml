@@ -1,18 +1,12 @@
-name: pipelene
+name: pipeline
 on:
   push:
     branches:
-    - feat-pipeline
+      - feat-pipeline
 jobs:
   SAST:
-    runs-on: ubuntu-latest #node:19-alpine3.15
+    runs-on: ubuntu-latest
     steps:
-    - name: Set up JDK 17
-      uses: actions/setup-java@v2
-      with:
-        java-version: '17'
-        distribution: 'adopt'
-
     - name: Checkout code
       uses: actions/checkout@v2
 
@@ -21,41 +15,18 @@ jobs:
       with:
         node-version: '19'
 
-    - name: build
-      run: |
-        npm install
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run tests
+      run: npm test
 
     - name: Set Environment Variables
       run: echo "BRANCH_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
 
-    - name: Validate and Configure build.gradle
-      env: 
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      run: |
-        if [ -f "build.gradle" ]; then
-          echo "Encontró el archivo"
-          echo "Verificando configuracion del plugin sonar"
-          if ! grep -q  'id "org.sonarqube" version "3.3"' build.gradle; then
-            echo "No se encuentra Plugin configurado"
-            sed -i '/id '\''java'\''/a \ \ \ \ id '\''org.sonarqube'\'' version '\''3.3'\''' build.gradle
-            echo "Plugin de Sonarcloud acaba de ser añadido a build.gradle"
-            cat build.gradle
-          else 
-            echo "Plugin de sonarcloud ya está configurado en build.gradle"
-          fi
-
-
-        else
-          echo "no se encontró archivo build.gradle"
-          exit 1
-        fi
-
-
-    - name: Validando existencia de proyecto en SonarCloud
+    - name: Validate project in SonarCloud
       id: validateProjectOnSonar
       run: |
-        #pwd
-        #ls -R
         set +e
         curl -f -X POST -u '${{ secrets.SONAR_TOKEN }}:' 'https://sonarcloud.io/api/projects/create' -d 'name=${{ github.event.repository.name }}' -d 'project=${{ github.event.repository.name }}' -d 'organization=claudiocorrear' -d 'visibility=public'
         if [ $? -ne 0 ]; then
@@ -63,16 +34,11 @@ jobs:
           echo "project_created=false" >> $GITHUB_ENV
         else
           echo "Proyecto ${{ github.event.repository.name }} creado exitosamente en Sonarcloud"
-          
           echo "Se establece rama feat-pipeline como rama por defecto"
           curl -X POST -u '${{ secrets.SONAR_TOKEN }}:' 'https://sonarcloud.io/api/project_branches/rename' -d 'name=feat-pipeline' -d 'project=${{ github.event.repository.name }}'
           echo "project_created=true" >> $GITHUB_ENV
         fi
         set -e
-
-    - name: Enable execution gradlew
-      run: | 
-        chmod 777 gradlew
 
     - name: Perform Initial Analysis (if Project Created)
       if: env.project_created == 'true'
@@ -81,12 +47,14 @@ jobs:
         REPO_NAME: ${{ github.event.repository.name }}
       run: |
         echo "Realizando análisis inicial en la rama feat-pipeline..."
-        ./gradlew sonarqube \
+        npx sonarqube-scanner \
           -Dsonar.projectKey=$REPO_NAME \
           -Dsonar.organization=claudiocorrear \
           -Dsonar.host.url=https://sonarcloud.io \
-          -Dsonar.token=$SONAR_TOKEN \
-          -Dsonar.branch.name=feat-pipeline
+          -Dsonar.login=$SONAR_TOKEN \
+          -Dsonar.branch.name=feat-pipeline \
+          -Dsonar.sources=. \
+          -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
     - name: Perform Branch Analysis
       if: env.project_created == 'false'
@@ -96,12 +64,14 @@ jobs:
         BRANCH_NAME: ${{ github.ref_name }}
       run: |
         echo "Realizando análisis en la rama actual: $BRANCH_NAME..."
-        ./gradlew sonarqube \
+        npx sonarqube-scanner \
           -Dsonar.projectKey=$REPO_NAME \
           -Dsonar.organization=claudiocorrear \
           -Dsonar.host.url=https://sonarcloud.io \
-          -Dsonar.token=$SONAR_TOKEN \
-          -Dsonar.branch.name=$BRANCH_NAME
+          -Dsonar.login=$SONAR_TOKEN \
+          -Dsonar.branch.name=$BRANCH_NAME \
+          -Dsonar.sources=. \
+          -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
     - name: Validate Quality Gate
       env:
@@ -111,21 +81,17 @@ jobs:
         echo "Validando el estado del Quality Gate..."
         analysisId=$(curl -s -u "$SONAR_TOKEN:" \
           "https://sonarcloud.io/api/ce/component?component=$REPO_NAME" | jq -r '.current.analysisId')
-
         qualityGateStatus=$(curl -s -u "$SONAR_TOKEN:" \
           "https://sonarcloud.io/api/qualitygates/project_status?analysisId=$analysisId" | jq -r '.projectStatus.status')
-
         if [ "$qualityGateStatus" != "OK" ]; then
           echo "El proyecto no cumple con el Quality Gate: $qualityGateStatus."
           echo "Verificando vulnerabilidades críticas..."
           vulnerabilities=$(curl -s -u "$SONAR_TOKEN:" \
             "https://sonarcloud.io/api/issues/search?componentKeys=$REPO_NAME&types=VULNERABILITY&severities=CRITICAL,BLOCKER" | jq -r '.total')
-
           if [ "$vulnerabilities" -gt 0 ]; then
             echo "Se encontraron $vulnerabilities vulnerabilidades críticas. El proyecto no cumple con los estándares de seguridad."
-            #exit 1
+            exit 1
           fi
         else
           echo "El proyecto cumple con el Quality Gate y no tiene vulnerabilidades críticas. Continuando sin problemas."
         fi
-
