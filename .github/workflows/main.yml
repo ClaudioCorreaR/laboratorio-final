@@ -120,10 +120,10 @@ jobs:
     - name: Docker Build
       run: |
         ls -R
-        docker build --tag claudiocorrear/laboratorio-final:latest .
+        docker build --tag claudiocorrea/laboratorio-final:latest .
     - name: Push Docker
       run: |
-        docker push claudiocorrear/laboratorio-final:latest
+        docker push claudiocorrea/laboratorio-final:latest
   DockerScan:
     needs: DockerBuild
     runs-on: ubuntu-24.04
@@ -137,9 +137,10 @@ jobs:
     
     - name: Pull Docker
       run: |
-        docker pull claudiocorrear/laboratorio-final:latest
+        docker pull claudiocorrea/laboratorio-final:latest
     - name: Run Trivy Scan
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: 'claudiocorrear/laboratorio-final:latest'
+        image-ref: 'claudiocorrea/laboratorio-final:latest'
         format: 'table'
+        
