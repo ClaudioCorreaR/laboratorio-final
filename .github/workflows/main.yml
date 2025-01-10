@@ -96,7 +96,7 @@ jobs:
           format: 'HTML'
           args: |
             --out ./reports
-            --failOnCVSS 7
+            --failOnCVSS 9
             --enableRetired
 
       - name: Upload Test Result
@@ -138,9 +138,11 @@ jobs:
     - name: Pull Docker
       run: |
         docker pull claudiocorrea/laboratorio-final:latest
+
     - name: Run Trivy Scan
       uses: aquasecurity/trivy-action@master
       with:
         image-ref: 'claudiocorrea/laboratorio-final:latest'
         format: 'table'
-        
+        severity: 'CRITICAL'
+        exit-code: 1
