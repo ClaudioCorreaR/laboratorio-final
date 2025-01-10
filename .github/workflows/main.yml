@@ -3,7 +3,7 @@ name: pipeline
 on:
   push:
     branches:
-      - main
+      - feat-pipeline
 
 jobs:
   SAST:
@@ -29,13 +29,13 @@ jobs:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         REPO_NAME: ${{ github.event.repository.name }}
       run: |
-        echo "Realizando análisis inicial en la rama main..."
+        echo "Realizando análisis inicial en la rama feat-pipeline..."
         npx sonarqube-scanner \
           -Dsonar.projectKey=$REPO_NAME \
           -Dsonar.organization=claudiocorrear \
           -Dsonar.host.url=https://sonarcloud.io \
           -Dsonar.login=$SONAR_TOKEN \
-          -Dsonar.branch.name=main \
+          -Dsonar.branch.name=feat-pipeline \
           -Dsonar.sources=. \
           -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
 
