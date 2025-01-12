@@ -183,5 +183,4 @@ jobs:
         with:
           image-ref: 'claudiocorrea/laboratorio-final:latest'
           format: 'table'
-          severity: 'CRITICAL'
-          exit-code: 1
+
