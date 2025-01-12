@@ -113,7 +113,7 @@ jobs:
           project: "$PROJECT_NAME"
           path: '.'
           format: 'HTML'
-          args: |
+          args: >
             --out ./reports
             --failOnCVSS 4
             --enableRetired
