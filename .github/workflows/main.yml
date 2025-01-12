@@ -112,7 +112,7 @@ jobs:
         with:
           project: "$PROJECT_NAME"
           path: '.'
-          format: 'JSON,HTML'
+          format: 'ALL'
           args: >
             --out ./reports
             --failOnCVSS 4
