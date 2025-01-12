@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+env:
+  PROJECT_NAME: "laboratorio-final-claudiocorrear"
+
 jobs:
   SAST:
     runs-on: ubuntu-latest
@@ -23,17 +26,17 @@ jobs:
       - name: Validando existencia de proyecto en SonarCloud
         id: validateProjectOnSonar
         run: |
-          echo ${{ github.event.repository.name }}
+          echo $PROJECT_NAME
           set +e
           echo "Verificando si el proyecto ya existe en SonarCloud..."
           PROJECT_EXISTS=$(curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
-            "https://sonarcloud.io/api/projects/search?organization=claudiocorrear&projects=${{ github.event.repository.name }}" | jq -r '.paging.total')
+            "https://sonarcloud.io/api/projects/search?organization=claudiocorrear&projects=$PROJECT_NAME" | jq -r '.paging.total')
       
           if [ "$PROJECT_EXISTS" -eq 0 ]; then
             echo "El proyecto no existe. Creándolo en SonarCloud..."
             curl -f -X POST -u "${{ secrets.SONAR_TOKEN }}:" "https://sonarcloud.io/api/projects/create" \
-              --data-urlencode "name=${{ github.event.repository.name }}" \
-              --data-urlencode "project=${{ github.event.repository.name }}" \
+              --data-urlencode "name=$PROJECT_NAME" \
+              --data-urlencode "project=$PROJECT_NAME" \
               --data-urlencode "organization=claudiocorrear" \
               --data-urlencode "visibility=public"
       
@@ -45,7 +48,7 @@ jobs:
             echo "Estableciendo rama 'main' como rama por defecto..."
             curl -X POST -u "${{ secrets.SONAR_TOKEN }}:" "https://sonarcloud.io/api/project_branches/rename" \
               --data-urlencode "name=main" \
-              --data-urlencode "project=${{ github.event.repository.name }}"
+              --data-urlencode "project=$PROJECT_NAME"
             echo "project_created=true" >> $GITHUB_ENV
           else
             echo "El proyecto ya existe en SonarCloud."
@@ -56,7 +59,7 @@ jobs:
         if: env.project_created == 'true'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          REPO_NAME: ${{ github.event.repository.name }}
+          REPO_NAME: $PROJECT_NAME
         run: |
           echo "Realizando análisis inicial en la rama main..."
           npx sonarqube-scanner \
@@ -71,7 +74,7 @@ jobs:
         if: env.project_created == 'false'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          REPO_NAME: ${{ github.event.repository.name }}
+          REPO_NAME: $PROJECT_NAME
           BRANCH_NAME: ${{ github.ref_name }}
         run: |
           echo ${{ github.ref_name }}
@@ -87,7 +90,7 @@ jobs:
       - name: Validate Quality Gate
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          REPO_NAME: ${{ github.event.repository.name }}
+          REPO_NAME: $PROJECT_NAME
         run: |
           echo "Validando el estado del Quality Gate..."
           vulnerabilities=$(curl -s -u "$SONAR_TOKEN:" \
@@ -110,7 +113,7 @@ jobs:
           JAVA_HOME: /opt/jdk
         id: Depcheck
         with:
-          project: "${{ github.event.repository.name }}"
+          project: "$PROJECT_NAME"
           path: '.'
           format: 'HTML'
           args: |
