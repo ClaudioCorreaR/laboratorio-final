@@ -24,25 +24,33 @@ jobs:
         id: validateProjectOnSonar
         run: |
           set +e
-          echo "Verificando existencia o creando proyecto en SonarCloud..."
-          curl -f -X POST -u "${{ secrets.SONAR_TOKEN }}:" "https://sonarcloud.io/api/projects/create" \
-            --data-urlencode "name=${{ github.event.repository.name }}" \
-            --data-urlencode "project=${{ github.event.repository.name }}" \
-            --data-urlencode "organization=claudiocorrear" \
-            --data-urlencode "visibility=public"
-          if [ $? -ne 0 ]; then
-            echo "Proyecto ya existe en SonarCloud"
-            echo "project_created=false" >> $GITHUB_ENV
-          else
-            echo "Proyecto ${{ github.event.repository.name }} creado exitosamente en SonarCloud"
-            echo "Estableciendo rama main como rama por defecto..."
+          echo "Verificando si el proyecto ya existe en SonarCloud..."
+          PROJECT_EXISTS=$(curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
+            "https://sonarcloud.io/api/projects/search?organization=claudiocorrear&projects=${{ github.event.repository.name }}" | jq -r '.paging.total')
+      
+          if [ "$PROJECT_EXISTS" -eq 0 ]; then
+            echo "El proyecto no existe. Creándolo en SonarCloud..."
+            curl -f -X POST -u "${{ secrets.SONAR_TOKEN }}:" "https://sonarcloud.io/api/projects/create" \
+              --data-urlencode "name=${{ github.event.repository.name }}" \
+              --data-urlencode "project=${{ github.event.repository.name }}" \
+              --data-urlencode "organization=claudiocorrear" \
+              --data-urlencode "visibility=public"
+      
+            if [ $? -ne 0 ]; then
+              echo "Error al crear el proyecto en SonarCloud."
+              exit 1
+            fi
+      
+            echo "Estableciendo rama 'main' como rama por defecto..."
             curl -X POST -u "${{ secrets.SONAR_TOKEN }}:" "https://sonarcloud.io/api/project_branches/rename" \
               --data-urlencode "name=main" \
               --data-urlencode "project=${{ github.event.repository.name }}"
             echo "project_created=true" >> $GITHUB_ENV
+          else
+            echo "El proyecto ya existe en SonarCloud."
+            echo "project_created=false" >> $GITHUB_ENV
           fi
           set -e
-
       - name: Perform Initial Analysis (if Project Created)
         if: env.project_created == 'true'
         env:
