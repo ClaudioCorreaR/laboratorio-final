@@ -23,6 +23,7 @@ jobs:
       - name: Validando existencia de proyecto en SonarCloud
         id: validateProjectOnSonar
         run: |
+          echo ${{ github.event.repository.name }}
           set +e
           echo "Verificando si el proyecto ya existe en SonarCloud..."
           PROJECT_EXISTS=$(curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
@@ -73,6 +74,7 @@ jobs:
           REPO_NAME: ${{ github.event.repository.name }}
           BRANCH_NAME: ${{ github.ref_name }}
         run: |
+          echo ${{ github.ref_name }}
           echo "Realizando análisis en la rama actual: $BRANCH_NAME..."
           npx sonarqube-scanner \
             -Dsonar.projectKey=$REPO_NAME \
