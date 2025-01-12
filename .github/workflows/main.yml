@@ -123,7 +123,7 @@ jobs:
           format: 'ALL'
           args: >
             --out ./reports
-            --failOnCVSS 4
+            --failOnCVSS 1
             --enableRetired
 
       - name: Upload Test Result
