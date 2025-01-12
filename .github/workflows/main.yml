@@ -118,7 +118,7 @@ jobs:
           JAVA_HOME: /opt/jdk
         id: Depcheck
         with:
-          project: "$PROJECT_NAME"
+          project: $PROJECT_NAME
           path: '.'
           format: 'ALL'
           args: >
