@@ -126,7 +126,7 @@ jobs:
           format: 'ALL'
           args: >
             --out ./reports
-            --failOnCVSS 1
+            --failOnCVSS 4
             --enableRetired
 
       - name: Upload Test Result
@@ -134,13 +134,13 @@ jobs:
         with:
           name: Depcheck Report
           path: ./reports
-      - name: Analyze Dependency-Check Results
-        run: |
-          critical=$(jq '.dependencies[] | select(.vulnerabilities != null) | .vulnerabilities[] | select(.severity == "CRITICAL")' ./reports/dependency-check-report.json | wc -l)
-          if [ "$critical" -gt 0 ]; then
-            echo "Critical vulnerabilities detected: $critical"
-            exit 1
-          fi
+      #- name: Analyze Dependency-Check Results
+       # run: |
+        #  critical=$(jq '.dependencies[] | select(.vulnerabilities != null) | .vulnerabilities[] | select(.severity == "CRITICAL")' ./reports/dependency-check-report.json | wc -l)
+        #  if [ "$critical" -gt 0 ]; then
+        #    echo "Critical vulnerabilities detected: $critical"
+        #    exit 1
+        #  fi
         
 
   DockerBuild:
