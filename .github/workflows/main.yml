@@ -134,6 +134,14 @@ jobs:
         with:
           name: Depcheck Report
           path: ./reports
+      - name: Analyze Dependency-Check Results
+        run: |
+          critical=$(jq '.dependencies[] | select(.vulnerabilities != null) | .vulnerabilities[] | select(.severity == "CRITICAL")' ./reports/dependency-check-report.json | wc -l)
+          if [ "$critical" -gt 0 ]; then
+            echo "Critical vulnerabilities detected: $critical"
+            exit 1
+          fi
+        
 
   DockerBuild:
     needs: SCA
