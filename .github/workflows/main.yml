@@ -112,6 +112,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Verify Node Modules
+        run: ls -la ./node_modules
+
       - name: Dependency Check
         uses: dependency-check/Dependency-Check_Action@1.1.0
         env:
@@ -125,13 +128,7 @@ jobs:
             --out ./reports
             --failOnCVSS 1
             --enableRetired
-      - name: Run Dependency Check
-        run: |
-          dependency-check --out ./reports --failOnCVSS 1 --enableRetired
-          if [ $? -ne 0 ]; then
-            echo "Dependency Check ha detectado vulnerabilidades que exceden el umbral."
-            exit 1
-          fi
+
       - name: Upload Test Result
         uses: actions/upload-artifact@master
         with:
