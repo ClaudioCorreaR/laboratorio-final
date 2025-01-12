@@ -31,7 +31,7 @@ jobs:
           echo "Verificando si el proyecto ya existe en SonarCloud..."
           PROJECT_EXISTS=$(curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
             "https://sonarcloud.io/api/projects/search?organization=claudiocorrear&projects=$PROJECT_NAME" | jq -r '.paging.total')
-      
+          echo PROJECT_EXISTS: $PROJECT_EXISTS
           if [ "$PROJECT_EXISTS" -eq 0 ]; then
             echo "El proyecto no existe. Creándolo en SonarCloud..."
             curl -f -X POST -u "${{ secrets.SONAR_TOKEN }}:" "https://sonarcloud.io/api/projects/create" \
